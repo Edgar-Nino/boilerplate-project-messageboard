@@ -1,35 +1,53 @@
 'use strict';
 require('dotenv').config();
-const express     = require('express');
-const bodyParser  = require('body-parser');
-const cors        = require('cors');
-
-const apiRoutes         = require('./routes/api.js');
-const fccTestingRoutes  = require('./routes/fcctesting.js');
-const runner            = require('./test-runner');
+const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const helmet = require('helmet')
+const apiRoutes = require('./routes/api.js');
+const fccTestingRoutes = require('./routes/fcctesting.js');
+const runner = require('./test-runner');
 
 const app = express();
 
+app.use(
+  helmet.referrerPolicy({
+    policy: ["same-origin"],
+  }),
+)
+
+app.use(
+  helmet.frameguard({
+    action: "sameorigin",
+  })
+);
+
+app.use(
+  helmet.dnsPrefetchControl({
+    allow: false,
+  })
+);
+
 app.use('/public', express.static(process.cwd() + '/public'));
 
-app.use(cors({origin: '*'})); //For FCC testing purposes only
+app.use(cors({ origin: '*' })); //For FCC testing purposes only
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 //Sample front-end
 app.route('/b/:board/')
-  .get(function (req, res) {
+  .get(function(req, res) {
     res.sendFile(process.cwd() + '/views/board.html');
   });
 app.route('/b/:board/:threadid')
-  .get(function (req, res) {
+  .get(function(req, res) {
     res.sendFile(process.cwd() + '/views/thread.html');
   });
 
 //Index page (static HTML)
 app.route('/')
-  .get(function (req, res) {
+  .get(function(req, res) {
     res.sendFile(process.cwd() + '/views/index.html');
   });
 
@@ -47,14 +65,14 @@ app.use(function(req, res, next) {
 });
 
 //Start our server and tests!
-const listener = app.listen(process.env.PORT || 3000, function () {
+const listener = app.listen(process.env.PORT || 3000, function() {
   console.log('Your app is listening on port ' + listener.address().port);
-  if(process.env.NODE_ENV==='test') {
+  if (process.env.NODE_ENV === 'test') {
     console.log('Running Tests...');
-    setTimeout(function () {
+    setTimeout(function() {
       try {
         runner.run();
-      } catch(e) {
+      } catch (e) {
         console.log('Tests are not valid:');
         console.error(e);
       }
